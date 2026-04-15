@@ -1,0 +1,971 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cloudflare Crop Local Test</title>
+  <style>
+    :root {
+      --bg: #f7f7f2;
+      --card: #ffffff;
+      --text: #1e1e1a;
+      --muted: #5a5a52;
+      --border: #ddd9cb;
+      --accent: #0f766e;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Avenir Next", "Trebuchet MS", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 20% 20%, #fff6df 0%, transparent 35%),
+        radial-gradient(circle at 80% 10%, #d8efe9 0%, transparent 30%),
+        linear-gradient(160deg, #f3f1e7 0%, #f7f7f2 40%, #eef6f4 100%);
+      min-height: 100vh;
+      padding: 28px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.5rem, 2vw + 1rem, 2.2rem);
+      letter-spacing: 0.01em;
+    }
+
+    .sub {
+      color: var(--muted);
+      margin-bottom: 20px;
+      max-width: 900px;
+      line-height: 1.4;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+      backdrop-filter: blur(10px);
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #2f2f28;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      border: 1px solid #cfcab8;
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: #fffdfa;
+      color: var(--text);
+      font: inherit;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      outline: 2px solid rgba(15, 118, 110, 0.2);
+      border-color: var(--accent);
+    }
+
+    .field select:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .range-wrap {
+      display: grid;
+      gap: 8px;
+    }
+
+    .range-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .range-value {
+      min-width: 42px;
+      text-align: right;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.82rem;
+      color: var(--accent);
+    }
+
+    .field input[type="range"] {
+      padding: 0;
+      accent-color: var(--accent);
+      background: transparent;
+    }
+
+    .field input[type="range"]:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .range-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 84px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .field input[type="number"] {
+      text-align: right;
+    }
+
+    .custom-card {
+      margin-bottom: 18px;
+      background: rgba(255, 255, 255, 0.84);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+    }
+
+    .custom-header {
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0.92));
+    }
+
+    .custom-header h2,
+    .section-title {
+      margin: 0 0 6px;
+      font-size: 1rem;
+    }
+
+    .section-copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.4;
+    }
+
+    .custom-body {
+      display: grid;
+      grid-template-columns: minmax(280px, 560px) 1fr;
+      gap: 0;
+    }
+
+    .preview-wrap {
+      padding: 16px;
+      border-right: 1px solid var(--border);
+      background: linear-gradient(145deg, #f5f1e7, #edf5f2);
+    }
+
+    .preview-wrap .preview {
+      width: 100%;
+      height: auto;
+      max-height: 560px;
+      object-fit: contain;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #efeee9;
+    }
+
+    .details {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .value-box {
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fffefa;
+    }
+
+    .value-label {
+      margin: 0 0 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .value-text {
+      margin: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.82rem;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+      transform: translateY(4px);
+      opacity: 0;
+      animation: rise 420ms ease forwards;
+    }
+
+    .card:nth-child(2)  { animation-delay:  70ms; }
+    .card:nth-child(3)  { animation-delay: 140ms; }
+    .card:nth-child(4)  { animation-delay: 210ms; }
+    .card:nth-child(5)  { animation-delay: 280ms; }
+    .card:nth-child(6)  { animation-delay: 350ms; }
+    .card:nth-child(7)  { animation-delay: 420ms; }
+    .card:nth-child(8)  { animation-delay: 490ms; }
+    .card:nth-child(9)  { animation-delay: 560ms; }
+    .card:nth-child(10) { animation-delay: 630ms; }
+    .card:nth-child(11) { animation-delay: 700ms; }
+    .card:nth-child(12) { animation-delay: 770ms; }
+    .card:nth-child(13) { animation-delay: 840ms; }
+    .card:nth-child(14) { animation-delay: 910ms; }
+
+    @keyframes rise {
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .preview {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      background: #efeee9;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .meta {
+      padding: 10px 12px 12px;
+    }
+
+    .label {
+      font-weight: 700;
+      color: var(--accent);
+      margin: 0 0 6px;
+      font-size: 0.92rem;
+    }
+
+    .opts {
+      margin: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.35;
+      color: #2c2c27;
+      word-break: break-word;
+    }
+
+    .note {
+      margin-top: 20px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      background: #fffdf5;
+      border-radius: 10px;
+      color: #3b3b34;
+      font-size: 0.92rem;
+    }
+
+    .note strong { color: #25251f; }
+
+    @media (max-width: 860px) {
+      .custom-body {
+        grid-template-columns: 1fr;
+      }
+
+      .preview-wrap {
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Cloudflare Image Crop Adjustment</h1>
+  <p class="sub">
+    This tool allows you to experiment with Cloudflare's image cropping and gravity features by generating transformation URLs based on your input. You could also save the cropped image in a specific format (Do not use automatic format for this).<br><br>
+    Virtual zoom means that the trim and crop are both adjusted to create a zoom effect.<br><br>
+    Gravity can use auto and face detection. They usually give good results, but there is a custom option as well.<br><br>
+
+</p>
+
+  <section class="controls" id="source-controls">
+    <div class="field" style="grid-column: 1 / -1;">
+      <label for="source-url">Source File URL</label>
+      <input
+        id="source-url"
+        type="text"
+        value="https://cdn-fca.contenthub.fi/api/v1/cdn/21194646"
+        spellcheck="false"
+        autocomplete="off"
+        placeholder="https://your-cf-domain.example/path/to/file.jpg"
+      />
+    </div>
+  </section>
+
+  <section class="controls">
+    <div class="field">
+      <div class="range-wrap">
+        <div class="range-head">
+          <label for="width">Width</label>
+          <span class="range-value" id="width-value">360</span>
+        </div>
+        <div class="range-row">
+          <input id="width" type="range" min="0" max="2000" step="1" value="360" />
+          <input id="width-input" type="number" min="0" max="2000" step="1" value="360" inputmode="numeric" />
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="range-wrap">
+        <div class="range-head">
+          <label for="height">Height</label>
+          <span class="range-value" id="height-value">360</span>
+        </div>
+        <div class="range-row">
+          <input id="height" type="range" min="0" max="2000" step="1" value="360" />
+          <input id="height-input" type="number" min="0" max="2000" step="1" value="360" inputmode="numeric" />
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="gravity-mode">Gravity</label>
+      <select id="gravity-mode">
+        <option value="auto" selected>auto</option>
+        <option value="face">face</option>
+        <option value="custom">custom</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <div class="range-wrap">
+        <div class="range-head">
+          <label for="gravity-vertical">Vertical Anchor</label>
+          <span class="range-value" id="gravity-vertical-value">0.50</span>
+        </div>
+        <input id="gravity-vertical" type="range" min="0" max="1" step="0.01" value="0.5" disabled />
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="range-wrap">
+        <div class="range-head">
+          <label for="gravity-horizontal">Horizontal Anchor</label>
+          <span class="range-value" id="gravity-horizontal-value">0.50</span>
+        </div>
+        <input id="gravity-horizontal" type="range" min="0" max="1" step="0.01" value="0.5" disabled />
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="format">Format</label>
+      <select id="format">
+        <option selected>auto</option>
+        <option>webp</option>
+        <option>jpeg</option>
+        <option>png</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <div class="range-wrap">
+        <div class="range-head">
+          <label for="virtual-zoom">Virtual Zoom</label>
+          <span class="range-value" id="virtual-zoom-value">1.00</span>
+        </div>
+        <div class="range-row">
+          <input id="virtual-zoom" type="range" min="1" max="1.5" step="0.01" value="1" />
+          <input id="virtual-zoom-input" type="number" min="1" max="1.5" step="0.01" value="1" inputmode="decimal" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="custom-card">
+    <div class="custom-header">
+      <h2>Custom Preview</h2>
+      <p class="section-copy">Use the controls above to change the generated Cloudflare transformation URL and compare the result below.</p>
+    </div>
+    <div class="custom-body">
+      <div class="preview-wrap">
+        <img class="preview" id="custom-preview" alt="Custom Cloudflare crop preview" />
+      </div>
+      <div class="details">
+        <div class="value-box">
+          <p class="value-label">Applied Options</p>
+          <p class="value-text" id="selected-options"></p>
+        </div>
+        <div class="value-box">
+          <p class="value-label">Generated URL</p>
+          <p class="value-text" id="custom-url"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="section-title">Size Reference</h2>
+    <p class="section-copy">Each pair shows a common crop size with <code>gravity=auto</code> and <code>gravity=face</code> side by side. Format follows your selection above.</p>
+  </section>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="note">
+    <strong>Tip:</strong> Change the <strong>Source File URL</strong> above to see how different images crop across these common sizes. Cards always show the latest source you enter.
+  </div>
+
+  <script>
+    const origin = "https://cdn-fca.contenthub.fi";
+    const defaultSourceUrl = "https://cdn-fca.contenthub.fi/api/v1/cdn/21194646";
+    const grid = document.getElementById("grid");
+    const sourceUrlInput = document.getElementById("source-url");
+    const widthSlider = document.getElementById("width");
+    const widthInput = document.getElementById("width-input");
+    const widthValue = document.getElementById("width-value");
+    const heightSlider = document.getElementById("height");
+    const heightInput = document.getElementById("height-input");
+    const heightValue = document.getElementById("height-value");
+    const gravityModeSelect = document.getElementById("gravity-mode");
+    const gravityVerticalSlider = document.getElementById("gravity-vertical");
+    const gravityHorizontalSlider = document.getElementById("gravity-horizontal");
+    const gravityVerticalValue = document.getElementById("gravity-vertical-value");
+    const gravityHorizontalValue = document.getElementById("gravity-horizontal-value");
+    const formatSelect = document.getElementById("format");
+    const virtualZoomSlider = document.getElementById("virtual-zoom");
+    const virtualZoomInput = document.getElementById("virtual-zoom-input");
+    const virtualZoomValue = document.getElementById("virtual-zoom-value");
+    const customPreview = document.getElementById("custom-preview");
+    const selectedOptions = document.getElementById("selected-options");
+    const customUrl = document.getElementById("custom-url");
+    const dimensionDebounceMs = 350;
+    let dimensionUpdateTimer = null;
+    let sourceWidth = null;
+    let sourceHeight = null;
+    let sourceLoadTimer = null;
+
+    const sizeCases = [
+      { label: "1920 × 880",  w: 1920, h: 880  },
+      { label: "1080 × 1080", w: 1080, h: 1080 },
+      { label: "2000 × 1045", w: 2000, h: 1045 },
+      { label: "1500 × 811",  w: 1500, h: 811  },
+      { label: "768 × 768",   w: 768,  h: 768  },
+      { label: "1200 × 628",  w: 1200, h: 628  },
+      { label: "1525 × 866",  w: 1525, h: 866  },
+    ];
+
+    function getCustomGravity() {
+      return `${Number(gravityHorizontalSlider.value).toFixed(2)}x${Number(gravityVerticalSlider.value).toFixed(2)}`;
+    }
+
+    function getVirtualZoomValue() {
+      return Number(virtualZoomSlider.value);
+    }
+
+    function getActiveSourceValue() {
+      const rawValue = sourceUrlInput.value.trim();
+      return rawValue || defaultSourceUrl;
+    }
+
+    function toAbsoluteSourceUrl(sourceValue) {
+      if (/^https?:\/\//i.test(sourceValue)) {
+        return sourceValue;
+      }
+
+      if (sourceValue.startsWith("/")) {
+        return `${origin}${sourceValue}`;
+      }
+
+      return `https://${sourceValue}`;
+    }
+
+    function unwrapCloudflareTransformedUrl(sourceUrl) {
+      try {
+        const parsedUrl = new URL(sourceUrl);
+        const marker = "/cdn-cgi/image/";
+        const markerIndex = parsedUrl.pathname.indexOf(marker);
+
+        if (markerIndex === -1) {
+          return sourceUrl;
+        }
+
+        const payload = parsedUrl.pathname.slice(markerIndex + marker.length);
+        const optionsSeparator = payload.indexOf("/");
+
+        if (optionsSeparator === -1) {
+          return sourceUrl;
+        }
+
+        const rawNestedSource = decodeURIComponent(payload.slice(optionsSeparator + 1));
+
+        if (/^https?:\/\//i.test(rawNestedSource)) {
+          return rawNestedSource;
+        }
+
+        const normalizedPath = rawNestedSource.startsWith("/") ? rawNestedSource : `/${rawNestedSource}`;
+        return `${parsedUrl.origin}${normalizedPath}`;
+      } catch {
+        return sourceUrl;
+      }
+    }
+
+    function extractIdentifierFromSourceUrl(sourceUrl) {
+      try {
+        const parsedUrl = new URL(sourceUrl);
+        const uuidValue = parsedUrl.searchParams.get("uuid");
+
+        if (/^\d+$/.test(uuidValue || "")) {
+          return uuidValue;
+        }
+
+        const cdnPathMatch = parsedUrl.pathname.match(/\/api\/v1\/cdn\/(\d+)/i);
+
+        if (cdnPathMatch) {
+          return cdnPathMatch[1];
+        }
+
+        const trailingNumberMatch = parsedUrl.pathname.match(/\/(\d+)(?:\.[a-z0-9]+)?$/i);
+
+        if (trailingNumberMatch) {
+          return trailingNumberMatch[1];
+        }
+
+        return null;
+      } catch {
+        return null;
+      }
+    }
+
+    function normalizeSourceUrl(sourceUrl) {
+      const unwrappedSourceUrl = unwrapCloudflareTransformedUrl(sourceUrl);
+      const identifier = extractIdentifierFromSourceUrl(unwrappedSourceUrl);
+
+      if (identifier) {
+        return `${origin}/api/v1/cdn/${identifier}`;
+      }
+
+      return unwrappedSourceUrl;
+    }
+
+    function getSourceUrlForTransform() {
+      const sourceValue = getActiveSourceValue();
+      const absoluteUrl = toAbsoluteSourceUrl(sourceValue);
+      return normalizeSourceUrl(absoluteUrl);
+    }
+
+    function getGravityValue(gravityOverride) {
+      if (gravityOverride) {
+        return gravityOverride;
+      }
+
+      if (gravityModeSelect.value === "auto") {
+        return "auto";
+      }
+
+      if (gravityModeSelect.value === "face") {
+        return "face";
+      }
+
+      return getCustomGravity();
+    }
+
+    function syncGravityControls() {
+      const isCustom = gravityModeSelect.value === "custom";
+      gravityVerticalSlider.disabled = !isCustom;
+      gravityHorizontalSlider.disabled = !isCustom;
+    }
+
+    function syncGravityReadouts() {
+      gravityVerticalValue.textContent = Number(gravityVerticalSlider.value).toFixed(2);
+      gravityHorizontalValue.textContent = Number(gravityHorizontalSlider.value).toFixed(2);
+    }
+
+    function parseDimensionValue(value, slider) {
+      if (value === "") {
+        return null;
+      }
+
+      const numericValue = Number(value);
+
+      if (!Number.isFinite(numericValue)) {
+        return null;
+      }
+
+      return Math.min(Number(slider.max), Math.max(Number(slider.min), Math.round(numericValue)));
+    }
+
+    function applyDimensionValue(slider, input, readout, nextValue, commitInput = true) {
+      const parsedValue = parseDimensionValue(nextValue, slider);
+
+      if (parsedValue === null) {
+        return false;
+      }
+
+      slider.value = parsedValue;
+
+      if (commitInput) {
+        input.value = String(parsedValue);
+      }
+
+      readout.textContent = String(parsedValue);
+      return true;
+    }
+
+    function getWidthValue() {
+      return Number(widthSlider.value);
+    }
+
+    function getHeightValue() {
+      return Number(heightSlider.value);
+    }
+
+    function buildDimensionOption(name, value) {
+      if (value <= 0) {
+        return null;
+      }
+
+      return `${name}=${value}`;
+    }
+
+    function getPreviewAspectRatio() {
+      return `${Math.max(1, getWidthValue())} / ${Math.max(1, getHeightValue())}`;
+    }
+
+    function syncVirtualZoomControl(nextValue, commitInput = true) {
+      const numericValue = Number(nextValue);
+
+      if (!Number.isFinite(numericValue)) {
+        return false;
+      }
+
+      const clampedValue = Math.min(Number(virtualZoomSlider.max), Math.max(Number(virtualZoomSlider.min), numericValue));
+      virtualZoomSlider.value = clampedValue.toFixed(2);
+
+      if (commitInput) {
+        virtualZoomInput.value = clampedValue.toFixed(2);
+      }
+
+      virtualZoomValue.textContent = clampedValue.toFixed(2);
+      return true;
+    }
+
+    function getGravityFocalPoint(gravityValue) {
+      if (gravityValue === "custom") {
+        return {
+          x: Number(gravityHorizontalSlider.value),
+          y: Number(gravityVerticalSlider.value)
+        };
+      }
+
+      if (gravityValue === "left") {
+        return { x: 0, y: 0.5 };
+      }
+
+      if (gravityValue === "right") {
+        return { x: 1, y: 0.5 };
+      }
+
+      if (gravityValue === "top") {
+        return { x: 0.5, y: 0 };
+      }
+
+      if (gravityValue === "bottom") {
+        return { x: 0.5, y: 1 };
+      }
+
+      if (/^\d*\.?\d+x\d*\.?\d+$/.test(gravityValue)) {
+        const [xValue, yValue] = gravityValue.split("x").map(Number);
+        return {
+          x: Math.min(1, Math.max(0, xValue)),
+          y: Math.min(1, Math.max(0, yValue))
+        };
+      }
+
+      return { x: 0.5, y: 0.5 };
+    }
+
+    function buildTrimOption(gravityValue) {
+      if (sourceWidth === null || sourceHeight === null) {
+        return null;
+      }
+
+      const zoomValue = getVirtualZoomValue();
+
+      if (zoomValue <= 1.001) {
+        return null;
+      }
+
+      const sourceAspectRatio = sourceWidth / sourceHeight;
+      const widthValue = getWidthValue();
+      const heightValue = getHeightValue();
+      const targetAspectRatio = widthValue > 0 && heightValue > 0 ? widthValue / heightValue : sourceAspectRatio;
+
+      let baseWidth;
+      let baseHeight;
+
+      if (targetAspectRatio >= sourceAspectRatio) {
+        baseWidth = sourceWidth;
+        baseHeight = baseWidth / targetAspectRatio;
+      } else {
+        baseHeight = sourceHeight;
+        baseWidth = baseHeight * targetAspectRatio;
+      }
+
+      const cropWidth = Math.max(1, baseWidth / zoomValue);
+      const cropHeight = Math.max(1, baseHeight / zoomValue);
+
+      const focal = getGravityFocalPoint(gravityValue);
+      const left = Math.min(Math.max(0, focal.x * sourceWidth - cropWidth / 2), sourceWidth - cropWidth);
+      const top = Math.min(Math.max(0, focal.y * sourceHeight - cropHeight / 2), sourceHeight - cropHeight);
+
+      const trimTop = Math.round(top);
+      const trimLeft = Math.round(left);
+      const trimRight = Math.max(0, Math.round(sourceWidth - (left + cropWidth)));
+      const trimBottom = Math.max(0, Math.round(sourceHeight - (top + cropHeight)));
+
+      if (trimTop === 0 && trimRight === 0 && trimBottom === 0 && trimLeft === 0) {
+        return null;
+      }
+
+      return `trim=${trimTop};${trimRight};${trimBottom};${trimLeft}`;
+    }
+
+    function loadSourceDimensions() {
+      const sourceImage = new Image();
+      sourceImage.decoding = "async";
+      sourceImage.onload = () => {
+        sourceWidth = sourceImage.naturalWidth;
+        sourceHeight = sourceImage.naturalHeight;
+        updatePreview();
+      };
+      sourceImage.onerror = () => {
+        sourceWidth = null;
+        sourceHeight = null;
+        updatePreview();
+      };
+      sourceImage.src = getSourceUrlForTransform();
+    }
+
+    function scheduleSourceDimensionLoad() {
+      if (sourceLoadTimer !== null) {
+        clearTimeout(sourceLoadTimer);
+      }
+
+      sourceLoadTimer = setTimeout(() => {
+        sourceLoadTimer = null;
+        loadSourceDimensions();
+      }, 300);
+    }
+
+    function clearDimensionUpdateTimer() {
+      if (dimensionUpdateTimer !== null) {
+        clearTimeout(dimensionUpdateTimer);
+        dimensionUpdateTimer = null;
+      }
+    }
+
+    function scheduleDimensionPreviewUpdate() {
+      clearDimensionUpdateTimer();
+      dimensionUpdateTimer = setTimeout(() => {
+        dimensionUpdateTimer = null;
+        commitDimensionField(widthSlider, widthInput, widthValue);
+        commitDimensionField(heightSlider, heightInput, heightValue);
+        updatePreview();
+      }, dimensionDebounceMs);
+    }
+
+    function commitDimensionField(slider, input, readout, fallbackToCurrent = false) {
+      const didApply = applyDimensionValue(slider, input, readout, input.value);
+
+      if (!didApply && fallbackToCurrent) {
+        input.value = String(slider.value);
+        readout.textContent = String(slider.value);
+        return false;
+      }
+
+      return didApply;
+    }
+
+    function buildOptions(gravityOverride) {
+      const gravityValue = getGravityValue(gravityOverride);
+      const options = [
+        buildDimensionOption("width", getWidthValue()),
+        buildDimensionOption("height", getHeightValue()),
+        buildTrimOption(gravityValue),
+        `fit=crop`,
+        `gravity=${gravityValue}`,
+        `format=${formatSelect.value}`
+      ].filter(Boolean);
+
+      return options.join(",");
+    }
+
+    function buildUrl(gravityOverride) {
+      return `${origin}/cdn-cgi/image/${buildOptions(gravityOverride)}/${getSourceUrlForTransform()}`;
+    }
+
+    function buildCardOptions(w, h, gravity) {
+      const parts = [
+        `width=${w}`,
+        `height=${h}`,
+        `fit=crop`,
+        `gravity=${gravity}`,
+        `format=${formatSelect.value}`
+      ];
+      return parts.join(",");
+    }
+
+    function renderGrid() {
+      grid.textContent = "";
+      const sourceUrl = getSourceUrlForTransform();
+
+      for (const [index, size] of sizeCases.entries()) {
+        for (const gravity of ["auto", "face"]) {
+          const options = buildCardOptions(size.w, size.h, gravity);
+          const url = `${origin}/cdn-cgi/image/${options}/${sourceUrl}`;
+
+          const card = document.createElement("article");
+          card.className = "card";
+          card.style.setProperty("animation-delay", `${index * 2 * 70 + (gravity === "face" ? 35 : 0)}ms`);
+
+          const img = document.createElement("img");
+          img.className = "preview";
+          img.loading = "lazy";
+          img.alt = `${size.label} — gravity=${gravity}`;
+          img.src = url;
+          img.style.aspectRatio = `${size.w} / ${size.h}`;
+
+          const meta = document.createElement("div");
+          meta.className = "meta";
+
+          const label = document.createElement("p");
+          label.className = "label";
+          label.textContent = `${size.label} — gravity=${gravity}`;
+
+          const opts = document.createElement("p");
+          opts.className = "opts";
+          opts.textContent = options;
+
+          meta.append(label, opts);
+          card.append(img, meta);
+          grid.append(card);
+        }
+      }
+    }
+
+    function updatePreview() {
+      const options = buildOptions();
+      const url = buildUrl();
+
+      syncGravityControls();
+      syncGravityReadouts();
+
+      customPreview.src = url;
+      customPreview.style.aspectRatio = getPreviewAspectRatio();
+      selectedOptions.textContent = options;
+      customUrl.textContent = url;
+
+      renderGrid();
+    }
+
+    [gravityModeSelect, formatSelect].forEach((control) => {
+      control.addEventListener("change", updatePreview);
+    });
+
+    sourceUrlInput.addEventListener("input", () => {
+      updatePreview();
+      scheduleSourceDimensionLoad();
+    });
+
+    sourceUrlInput.addEventListener("blur", () => {
+      sourceUrlInput.value = getSourceUrlForTransform();
+      loadSourceDimensions();
+    });
+
+    [virtualZoomSlider, virtualZoomInput].forEach((control) => {
+      control.addEventListener("input", () => {
+        const shouldCommitInput = control === virtualZoomSlider;
+        syncVirtualZoomControl(control.value, shouldCommitInput);
+        scheduleDimensionPreviewUpdate();
+      });
+    });
+
+    virtualZoomInput.addEventListener("blur", () => {
+      syncVirtualZoomControl(virtualZoomInput.value, true);
+      updatePreview();
+    });
+
+    virtualZoomInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        syncVirtualZoomControl(virtualZoomInput.value, true);
+        updatePreview();
+      }
+    });
+
+    [
+      [widthSlider, widthInput, widthValue],
+      [heightSlider, heightInput, heightValue]
+    ].forEach(([slider, input, readout]) => {
+      slider.addEventListener("input", () => {
+        applyDimensionValue(slider, input, readout, slider.value);
+        scheduleDimensionPreviewUpdate();
+      });
+
+      input.addEventListener("input", () => {
+        const parsedValue = parseDimensionValue(input.value, slider);
+        readout.textContent = parsedValue === null ? String(slider.value) : String(parsedValue);
+        scheduleDimensionPreviewUpdate();
+      });
+
+      input.addEventListener("blur", () => {
+        clearDimensionUpdateTimer();
+        commitDimensionField(slider, input, readout, true);
+        updatePreview();
+      });
+
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          clearDimensionUpdateTimer();
+          commitDimensionField(slider, input, readout, true);
+          updatePreview();
+        }
+      });
+    });
+
+    [gravityVerticalSlider, gravityHorizontalSlider].forEach((control) => {
+      control.addEventListener("input", updatePreview);
+      control.addEventListener("change", updatePreview);
+    });
+
+    applyDimensionValue(widthSlider, widthInput, widthValue, widthSlider.value);
+    applyDimensionValue(heightSlider, heightInput, heightValue, heightSlider.value);
+    syncVirtualZoomControl(virtualZoomSlider.value);
+    sourceUrlInput.value = defaultSourceUrl;
+    loadSourceDimensions();
+
+    updatePreview();
+  </script>
+</body>
+</html>
