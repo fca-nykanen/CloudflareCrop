@@ -159,24 +159,24 @@
 
     .custom-body {
       display: grid;
-      grid-template-columns: minmax(280px, 560px) 1fr;
+      grid-template-columns: minmax(360px, 1fr) minmax(220px, 300px);
       gap: 0;
     }
 
     .preview-wrap {
       padding: 16px;
       border-right: 1px solid var(--border);
-      background: linear-gradient(145deg, #f5f1e7, #edf5f2);
+      background: transparent;
     }
 
     .preview-wrap .preview {
       width: 100%;
       height: auto;
-      max-height: 560px;
+      max-height: 680px;
       object-fit: contain;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: #efeee9;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
     }
 
     .details {
@@ -208,6 +208,15 @@
       font-size: 0.82rem;
       line-height: 1.45;
       word-break: break-word;
+    }
+
+    .value-text.copyable {
+      cursor: copy;
+      transition: color 0.18s ease;
+    }
+
+    .value-text.copyable:hover {
+      color: var(--accent);
     }
 
     .grid {
@@ -326,6 +335,7 @@
     This tool allows you to experiment with Cloudflare's image cropping and gravity features by generating transformation URLs based on your input. You could also save the cropped image in a specific format (Do not use automatic format for this).<br><br>
     Virtual zoom means that the trim and crop are both adjusted to create a zoom effect.<br><br>
     Gravity can use auto and face detection. They usually give good results, but there is a custom option as well.<br><br>
+    You can also click the example cards below to apply their dimensions and gravity settings to the custom preview.<br><br>
 
 </p>
 
@@ -400,16 +410,6 @@
     </div>
 
     <div class="field">
-      <label for="format">Format</label>
-      <select id="format">
-        <option selected>auto</option>
-        <option>webp</option>
-        <option>jpeg</option>
-        <option>png</option>
-      </select>
-    </div>
-
-    <div class="field">
       <div class="range-wrap">
         <div class="range-head">
           <label for="virtual-zoom">Virtual Zoom</label>
@@ -420,6 +420,16 @@
           <input id="virtual-zoom-input" type="number" min="1" max="1.5" step="0.01" value="1" inputmode="decimal" />
         </div>
       </div>
+    </div>
+
+    <div class="field">
+      <label for="format">Format</label>
+      <select id="format">
+        <option selected>auto</option>
+        <option>webp</option>
+        <option>jpeg</option>
+        <option>png</option>
+      </select>
     </div>
   </section>
 
@@ -434,12 +444,8 @@
       </div>
       <div class="details">
         <div class="value-box">
-          <p class="value-label">Applied Options</p>
-          <p class="value-text" id="selected-options"></p>
-        </div>
-        <div class="value-box">
           <p class="value-label">Generated URL</p>
-          <p class="value-text" id="custom-url"></p>
+          <p class="value-text copyable" id="custom-url" title="Click to copy"></p>
         </div>
       </div>
     </div>
@@ -447,7 +453,7 @@
 
   <section>
     <h2 class="section-title">Size Reference</h2>
-    <p class="section-copy">Each pair shows a common crop size with <code>gravity=auto</code> and <code>gravity=face</code> side by side. Format follows your selection above.</p>
+    <p class="section-copy">Each pair shows a common crop size with <code>gravity=auto</code> and <code>gravity=face</code> side by side.</p>
   </section>
 
   <div class="grid" id="grid"></div>
@@ -477,7 +483,6 @@
     const virtualZoomInput = document.getElementById("virtual-zoom-input");
     const virtualZoomValue = document.getElementById("virtual-zoom-value");
     const customPreview = document.getElementById("custom-preview");
-    const selectedOptions = document.getElementById("selected-options");
     const customUrl = document.getElementById("custom-url");
     const dimensionDebounceMs = 350;
     let dimensionUpdateTimer = null;
@@ -500,6 +505,10 @@
     }
 
     function getVirtualZoomValue() {
+      if (gravityModeSelect.value !== "custom") {
+        return 1;
+      }
+
       return Number(virtualZoomSlider.value);
     }
 
@@ -614,6 +623,8 @@
       const isCustom = gravityModeSelect.value === "custom";
       gravityVerticalSlider.disabled = !isCustom;
       gravityHorizontalSlider.disabled = !isCustom;
+      virtualZoomSlider.disabled = !isCustom;
+      virtualZoomInput.disabled = !isCustom;
     }
 
     function syncGravityReadouts() {
@@ -909,6 +920,21 @@
       }
     }
 
+    async function copyGeneratedUrl() {
+      const url = customUrl.textContent.trim();
+
+      if (!url) {
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(url);
+        customUrl.title = "Copied";
+      } catch {
+        customUrl.title = "Copy failed";
+      }
+    }
+
     function updatePreview() {
       const options = buildOptions();
       const url = buildUrl();
@@ -918,7 +944,6 @@
 
       customPreview.src = url;
       customPreview.style.aspectRatio = getPreviewAspectRatio();
-      selectedOptions.textContent = options;
       customUrl.textContent = url;
 
       renderGrid();
@@ -992,6 +1017,8 @@
       control.addEventListener("input", updatePreview);
       control.addEventListener("change", updatePreview);
     });
+
+    customUrl.addEventListener("click", copyGeneratedUrl);
 
     applyDimensionValue(widthSlider, widthInput, widthValue, widthSlider.value);
     applyDimensionValue(heightSlider, heightInput, heightValue, heightSlider.value);
